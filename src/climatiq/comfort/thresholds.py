@@ -19,9 +19,15 @@ class Threshold(BaseModel):
 class SafetyThresholds(BaseModel):
     """Safety-critical thresholds that always override other concerns."""
 
-    frost_temp: float = Field(default=5.0, description="Indoor temp below which freeze protection activates (°C)")
-    overheat_temp: float = Field(default=32.0, description="Indoor temp above which cooling is mandatory (°C)")
-    co2_critical: float = Field(default=2000.0, description="CO2 level requiring immediate ventilation (ppm)")
+    frost_temp: float = Field(
+        default=5.0, description="Indoor temp below which freeze protection activates (°C)"
+    )
+    overheat_temp: float = Field(
+        default=32.0, description="Indoor temp above which cooling is mandatory (°C)"
+    )
+    co2_critical: float = Field(
+        default=2000.0, description="CO2 level requiring immediate ventilation (ppm)"
+    )
     humidity_critical_low: float = Field(default=15.0, description="Critically low humidity (%)")
     humidity_critical_high: float = Field(default=75.0, description="Critically high humidity (%)")
 
@@ -41,7 +47,9 @@ class ComfortThresholds(BaseModel):
     pmv_target: float = Field(default=0.0, description="Target PMV value")
     pmv_tolerance: float = Field(default=0.5, description="Acceptable PMV deviation")
     ppd_max: float = Field(default=10.0, description="Maximum acceptable PPD (%)")
-    dew_point_max: float = Field(default=15.0, description="Maximum dew point to prevent condensation (°C)")
+    dew_point_max: float = Field(
+        default=15.0, description="Maximum dew point to prevent condensation (°C)"
+    )
     temp_min: float = Field(default=20.0, description="Minimum comfortable temperature (°C)")
     temp_max: float = Field(default=25.0, description="Maximum comfortable temperature (°C)")
     humidity_min: float = Field(default=25.0, description="Minimum comfortable humidity (%)")

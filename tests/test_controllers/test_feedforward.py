@@ -2,7 +2,6 @@
 
 from climatiq.controllers.feedforward import FeedforwardController
 from climatiq.models.environment import OutdoorConditions
-from climatiq.models.schedule import Season
 
 
 class TestFeedforwardController:
@@ -11,7 +10,9 @@ class TestFeedforwardController:
     def test_no_solar_load_at_night(self) -> None:
         """Sun below horizon should give no solar load."""
         ctrl = FeedforwardController()
-        load = ctrl.calculate_solar_load("z1", window_bearing_deg=180.0, sun_azimuth=0.0, sun_elevation=-10.0)
+        load = ctrl.calculate_solar_load(
+            "z1", window_bearing_deg=180.0, sun_azimuth=0.0, sun_elevation=-10.0
+        )
         assert load.intensity == "none"
 
     def test_direct_sun_facing_window(self) -> None:

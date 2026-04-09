@@ -1,7 +1,5 @@
 """Tests for dew point calculation."""
 
-import math
-
 import pytest
 
 from climatiq.comfort.dew_point import calculate_dew_point, is_condensation_risk

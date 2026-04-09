@@ -18,7 +18,9 @@ class OutdoorConditions(BaseModel):
     solar_radiation: float | None = Field(default=None, ge=0, description="Solar radiation (W/m²)")
     pressure: float | None = Field(default=None, description="Atmospheric pressure (hPa)")
     timestamp: datetime = Field(default_factory=datetime.now)
-    forecast_temp_24h: float | None = Field(default=None, description="Forecast temperature in 24h (°C)")
+    forecast_temp_24h: float | None = Field(
+        default=None, description="Forecast temperature in 24h (°C)"
+    )
 
 
 class AirQualityReading(BaseModel):

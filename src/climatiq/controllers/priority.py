@@ -9,11 +9,9 @@ optimizations.
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any
 
-from climatiq.comfort.thresholds import AllThresholds, DEFAULT_THRESHOLDS
+from climatiq.comfort.thresholds import DEFAULT_THRESHOLDS, AllThresholds
 from climatiq.models.comfort import ComfortResult
-from climatiq.models.devices import Device
 from climatiq.models.environment import OutdoorConditions
 from climatiq.models.sensors import SensorReading, SensorType
 
@@ -89,12 +87,18 @@ class PriorityCascade:
         for r in readings:
             if r.sensor_type == SensorType.TEMPERATURE:
                 if r.value < thresholds.frost_temp:
-                    issues.append(f"FROST RISK: Temperature {r.value}°C below {thresholds.frost_temp}°C")
+                    issues.append(
+                        f"FROST RISK: Temperature {r.value}°C below {thresholds.frost_temp}°C"
+                    )
                 if r.value > thresholds.overheat_temp:
-                    issues.append(f"OVERHEAT: Temperature {r.value}°C above {thresholds.overheat_temp}°C")
+                    issues.append(
+                        f"OVERHEAT: Temperature {r.value}°C above {thresholds.overheat_temp}°C"
+                    )
             elif r.sensor_type == SensorType.CO2:
                 if r.value > thresholds.co2_critical:
-                    issues.append(f"CO2 CRITICAL: {r.value} ppm above {thresholds.co2_critical} ppm")
+                    issues.append(
+                        f"CO2 CRITICAL: {r.value} ppm above {thresholds.co2_critical} ppm"
+                    )
             elif r.sensor_type == SensorType.HUMIDITY:
                 if r.value < thresholds.humidity_critical_low:
                     issues.append(f"HUMIDITY CRITICAL LOW: {r.value}%")

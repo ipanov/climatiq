@@ -1,6 +1,6 @@
 """Tests for schedule controller."""
 
-from climatiq.controllers.schedule import ScheduleController, DEFAULT_SCHEDULE
+from climatiq.controllers.schedule import ScheduleController
 from climatiq.models.schedule import Season, TimePeriod
 
 
@@ -48,7 +48,9 @@ class TestScheduleController:
         """Custom schedule entries should override defaults."""
         from climatiq.models.schedule import ScheduleEntry
 
-        custom = [ScheduleEntry(season=Season.SUMMER, period=TimePeriod.MORNING, temperature_target=18.0)]
+        custom = [
+            ScheduleEntry(season=Season.SUMMER, period=TimePeriod.MORNING, temperature_target=18.0)
+        ]
         controller = ScheduleController(schedule=custom)
         entry = controller.get_target(Season.SUMMER, TimePeriod.MORNING)
         assert entry.temperature_target == 18.0

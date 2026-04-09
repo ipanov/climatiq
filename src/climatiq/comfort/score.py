@@ -6,11 +6,10 @@ Combines PMV, humidity, dew point, and air quality into a single
 
 from __future__ import annotations
 
-from climatiq.models.comfort import ComfortResult, ComfortTarget, PMVResult
-from climatiq.models.sensors import SensorReading, SensorType
 from climatiq.comfort.dew_point import calculate_dew_point
 from climatiq.comfort.pmv import calculate_pmv
-
+from climatiq.models.comfort import ComfortResult, ComfortTarget, PMVResult
+from climatiq.models.sensors import SensorReading, SensorType
 
 # Scoring weights (must sum to 1.0)
 WEIGHT_PMV = 0.40
@@ -148,9 +147,13 @@ def assess_zone_comfort(
     # Identify issues
     issues: list[str] = []
     if temp is not None and (temp < target.temperature_min or temp > target.temperature_max):
-        issues.append(f"Temperature {temp}°C outside target range [{target.temperature_min}, {target.temperature_max}]")
+        issues.append(
+            f"Temperature {temp}°C outside target range [{target.temperature_min}, {target.temperature_max}]"
+        )
     if humidity is not None and (humidity < target.humidity_min or humidity > target.humidity_max):
-        issues.append(f"Humidity {humidity}% outside target range [{target.humidity_min}, {target.humidity_max}]")
+        issues.append(
+            f"Humidity {humidity}% outside target range [{target.humidity_min}, {target.humidity_max}]"
+        )
     if dew_point is not None and dew_point > target.dew_point_max:
         issues.append(f"Dew point {dew_point}°C exceeds limit {target.dew_point_max}°C")
     if pmv_result is not None and not pmv_result.is_compliant:

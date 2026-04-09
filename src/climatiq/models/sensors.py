@@ -46,7 +46,14 @@ class SensorType(str, Enum):
     @property
     def is_air_quality(self) -> bool:
         """Whether this sensor type measures air quality."""
-        return self in (SensorType.CO2, SensorType.PM25, SensorType.PM10, SensorType.TVOC, SensorType.HCHO, SensorType.AQI)
+        return self in (
+            SensorType.CO2,
+            SensorType.PM25,
+            SensorType.PM10,
+            SensorType.TVOC,
+            SensorType.HCHO,
+            SensorType.AQI,
+        )
 
 
 class SensorReading(BaseModel):
@@ -57,7 +64,9 @@ class SensorReading(BaseModel):
     value: float = Field(..., description="Measured value")
     unit: str = Field(default="", description="Measurement unit")
     zone_id: str | None = Field(default=None, description="Zone this sensor belongs to")
-    timestamp: datetime = Field(default_factory=datetime.now, description="When the reading was taken")
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="When the reading was taken"
+    )
     is_outdoor: bool = Field(default=False, description="Whether this is an outdoor sensor")
 
     model_config = {"frozen": False}

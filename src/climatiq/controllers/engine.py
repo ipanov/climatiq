@@ -64,7 +64,9 @@ class ControlEngine:
         self._priority = PriorityCascade()
         self._feedforward = FeedforwardController()
 
-    def evaluate_zone(self, zone: Zone, target: ComfortTarget) -> tuple[ComfortResult, list[ControlAction]]:
+    def evaluate_zone(
+        self, zone: Zone, target: ComfortTarget
+    ) -> tuple[ComfortResult, list[ControlAction]]:
         """Evaluate a single zone and determine actions.
 
         Args:
@@ -90,7 +92,9 @@ class ControlEngine:
         actions = self._generate_comfort_actions(zone, comfort, target, readings, outdoor)
         return comfort, actions
 
-    def evaluate_all(self, targets: dict[str, ComfortTarget]) -> dict[str, tuple[ComfortResult, list[ControlAction]]]:
+    def evaluate_all(
+        self, targets: dict[str, ComfortTarget]
+    ) -> dict[str, tuple[ComfortResult, list[ControlAction]]]:
         """Evaluate all zones in the home.
 
         Args:
@@ -118,7 +122,10 @@ class ControlEngine:
             if action.action == "set_temperature":
                 success = self._devices.set_state(
                     action.device_id,
-                    {"temperature": action.params.get("temperature"), "hvac_mode": action.params.get("hvac_mode")},
+                    {
+                        "temperature": action.params.get("temperature"),
+                        "hvac_mode": action.params.get("hvac_mode"),
+                    },
                 )
             elif action.action == "turn_on":
                 success = self._devices.set_state(action.device_id, {"state": "on"})
@@ -155,30 +162,32 @@ class ControlEngine:
         actions: list[ControlAction] = []
 
         # Find HVAC devices in this zone
-        hvac_devices = [
-            d for d in self._get_zone_devices(zone) if d.device_type.value == "hvac"
-        ]
+        hvac_devices = [d for d in self._get_zone_devices(zone) if d.device_type.value == "hvac"]
 
         for r in readings:
             if r.sensor_type == SensorType.TEMPERATURE:
                 if r.value < 5:  # Frost protection
                     for dev in hvac_devices:
-                        actions.append(ControlAction(
-                            device_id=dev.id,
-                            action="set_temperature",
-                            params={"temperature": 18.0, "hvac_mode": HVACMode.HEAT.value},
-                            reason=f"Frost protection: {r.value}°C",
-                            priority=Priority.SAFETY,
-                        ))
+                        actions.append(
+                            ControlAction(
+                                device_id=dev.id,
+                                action="set_temperature",
+                                params={"temperature": 18.0, "hvac_mode": HVACMode.HEAT.value},
+                                reason=f"Frost protection: {r.value}°C",
+                                priority=Priority.SAFETY,
+                            )
+                        )
                 elif r.value > 32:  # Overheat protection
                     for dev in hvac_devices:
-                        actions.append(ControlAction(
-                            device_id=dev.id,
-                            action="set_temperature",
-                            params={"temperature": 26.0, "hvac_mode": HVACMode.COOL.value},
-                            reason=f"Overheat protection: {r.value}°C",
-                            priority=Priority.SAFETY,
-                        ))
+                        actions.append(
+                            ControlAction(
+                                device_id=dev.id,
+                                action="set_temperature",
+                                params={"temperature": 26.0, "hvac_mode": HVACMode.COOL.value},
+                                reason=f"Overheat protection: {r.value}°C",
+                                priority=Priority.SAFETY,
+                            )
+                        )
 
         return actions
 
@@ -191,7 +200,6 @@ class ControlEngine:
         outdoor: OutdoorConditions,
     ) -> list[ControlAction]:
         """Generate comfort optimization actions."""
-        from climatiq.models.sensors import SensorType
 
         actions: list[ControlAction] = []
 
@@ -217,13 +225,15 @@ class ControlEngine:
             else:
                 continue  # Within range
 
-            actions.append(ControlAction(
-                device_id=dev.id,
-                action="set_temperature",
-                params={"temperature": set_temp, "hvac_mode": mode},
-                reason=f"Comfort: temp {comfort.temperature}°C, target {set_temp}°C",
-                priority=Priority.COMFORT,
-            ))
+            actions.append(
+                ControlAction(
+                    device_id=dev.id,
+                    action="set_temperature",
+                    params={"temperature": set_temp, "hvac_mode": mode},
+                    reason=f"Comfort: temp {comfort.temperature}°C, target {set_temp}°C",
+                    priority=Priority.COMFORT,
+                )
+            )
 
         return actions
 

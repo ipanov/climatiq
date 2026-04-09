@@ -72,7 +72,7 @@ class TestPriorityCascade:
         comfort = ComfortResult(zone_id="test", comfort_score=60.0, issues=[])
         outdoor = OutdoorConditions(temperature=20.0, humidity=50.0)
 
-        priority, issues = cascade.evaluate(readings, comfort, outdoor)
+        priority, _issues = cascade.evaluate(readings, comfort, outdoor)
         assert priority == Priority.HEALTH
 
     def test_safety_overrides_health(self) -> None:
@@ -85,5 +85,5 @@ class TestPriorityCascade:
         comfort = ComfortResult(zone_id="test", comfort_score=20.0, issues=[])
         outdoor = OutdoorConditions(temperature=-5.0, humidity=80.0)
 
-        priority, issues = cascade.evaluate(readings, comfort, outdoor)
+        priority, _issues = cascade.evaluate(readings, comfort, outdoor)
         assert priority == Priority.SAFETY

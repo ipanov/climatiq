@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from climatiq.models.comfort import ComfortResult, ComfortTarget, PMVResult
-from climatiq.models.devices import Device, DeviceCapability
+from climatiq.models.devices import Device
 from climatiq.models.environment import AirQualityReading, OutdoorConditions
 from climatiq.models.sensors import SensorReading
 

@@ -13,8 +13,8 @@ import yaml
 from pydantic import BaseModel, Field
 
 from climatiq.models.comfort import ComfortTarget
-from climatiq.models.devices import Device, DeviceCapability, DeviceType
-from climatiq.models.home import Home, Zone
+from climatiq.models.devices import Device
+from climatiq.models.home import Home
 from climatiq.models.schedule import ScheduleEntry
 
 

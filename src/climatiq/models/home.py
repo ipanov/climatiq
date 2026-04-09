@@ -48,7 +48,9 @@ class WindowOrientation(str, Enum):
             (270.0, cls.WEST),
             (315.0, cls.NORTHWEST),
         ]
-        closest = min(directions, key=lambda d: min(abs(normalized - d[0]), 360 - abs(normalized - d[0])))
+        closest = min(
+            directions, key=lambda d: min(abs(normalized - d[0]), 360 - abs(normalized - d[0]))
+        )
         return closest[1]
 
 
@@ -69,7 +71,9 @@ class Zone(BaseModel):
     )
     area_m2: float | None = Field(default=None, gt=0, description="Zone area in square meters")
     sensor_ids: list[str] = Field(default_factory=list, description="IDs of sensors in this zone")
-    device_ids: list[str] = Field(default_factory=list, description="IDs of controllable devices in this zone")
+    device_ids: list[str] = Field(
+        default_factory=list, description="IDs of controllable devices in this zone"
+    )
 
     @property
     def window_orientation(self) -> WindowOrientation | None:
@@ -93,7 +97,9 @@ class Home(BaseModel):
 
     name: str = Field(..., description="Home name")
     zones: list[Zone] = Field(default_factory=list, description="Climate zones in this home")
-    latitude: float = Field(..., ge=-90, le=90, description="Home latitude for weather/solar calculations")
+    latitude: float = Field(
+        ..., ge=-90, le=90, description="Home latitude for weather/solar calculations"
+    )
     longitude: float = Field(..., ge=-180, le=180, description="Home longitude")
     timezone: str = Field(default="UTC", description="IANA timezone string (e.g., 'Europe/Skopje')")
     altitude_m: float | None = Field(default=None, description="Altitude in meters above sea level")

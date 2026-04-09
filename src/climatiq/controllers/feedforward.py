@@ -8,7 +8,6 @@ cold weather arrives.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 from climatiq.models.environment import OutdoorConditions
@@ -72,9 +71,9 @@ class FeedforwardController:
             intensity = "none"
         elif facing and sun_elevation > 15 and (cloud_cover is None or cloud_cover < 50):
             intensity = "high"
-        elif facing and (cloud_cover is None or cloud_cover < 70):
-            intensity = "medium"
-        elif partial and (cloud_cover is None or cloud_cover < 50):
+        elif (facing and (cloud_cover is None or cloud_cover < 70)) or (
+            partial and (cloud_cover is None or cloud_cover < 50)
+        ):
             intensity = "medium"
         else:
             intensity = "low"
@@ -117,7 +116,7 @@ class FeedforwardController:
             return 0.0
 
         # Look at the next 6 hours
-        near_forecast = forecast[:min(4, len(forecast))]
+        near_forecast = forecast[: min(4, len(forecast))]
         if not near_forecast:
             return 0.0
 
@@ -162,11 +161,9 @@ class FeedforwardController:
             return "ac_preferred"
 
         # Good conditions for ventilation
-        if aqi is None or aqi <= 50:
-            if 15 <= outdoor.temperature <= 27:
-                return "open_windows"
-        elif aqi <= 75:
-            if 15 <= outdoor.temperature <= 25:
-                return "open_windows"
+        if (aqi is None or aqi <= 50) and 15 <= outdoor.temperature <= 27:
+            return "open_windows"
+        if aqi is not None and aqi <= 75 and 15 <= outdoor.temperature <= 25:
+            return "open_windows"
 
         return "keep_closed"

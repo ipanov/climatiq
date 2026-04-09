@@ -65,8 +65,12 @@ class Device(BaseModel):
     device_type: DeviceType = Field(..., description="Type of device")
     capabilities: DeviceCapability = Field(..., description="What this device can do")
     zone_id: str = Field(..., description="Zone this device belongs to")
-    provider: str = Field(default="homeassistant", description="Provider name (e.g., 'homeassistant', 'esphome')")
-    min_runtime_minutes: int = Field(default=5, ge=0, description="Minimum time device must run before toggling")
+    provider: str = Field(
+        default="homeassistant", description="Provider name (e.g., 'homeassistant', 'esphome')"
+    )
+    min_runtime_minutes: int = Field(
+        default=5, ge=0, description="Minimum time device must run before toggling"
+    )
     entity_id: str | None = Field(default=None, description="Provider-specific entity ID")
 
     model_config = {"frozen": False}

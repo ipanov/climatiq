@@ -35,13 +35,13 @@ class Season(str, Enum):
 class TimePeriod(str, Enum):
     """Time-of-day periods for setpoint adjustments."""
 
-    DEEP_NIGHT = "deep_night"      # 00:00-05:59
-    MORNING = "morning"            # 06:00-08:59
+    DEEP_NIGHT = "deep_night"  # 00:00-05:59
+    MORNING = "morning"  # 06:00-08:59
     LATE_MORNING = "late_morning"  # 09:00-11:59
     EARLY_AFTERNOON = "early_afternoon"  # 12:00-14:59
-    LATE_AFTERNOON = "late_afternoon"    # 15:00-17:59
-    EVENING = "evening"            # 18:00-20:59
-    NIGHT = "night"                # 21:00-23:59
+    LATE_AFTERNOON = "late_afternoon"  # 15:00-17:59
+    EVENING = "evening"  # 18:00-20:59
+    NIGHT = "night"  # 21:00-23:59
 
     @classmethod
     def from_hour(cls, hour: int) -> TimePeriod:

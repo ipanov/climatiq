@@ -1,6 +1,6 @@
 """Tests for deadband controller."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from climatiq.controllers.deadband import DeadbandConfig, DeadbandController
 
@@ -15,7 +15,9 @@ class TestDeadbandController:
     def test_should_not_act_inside_deadband(self) -> None:
         controller = DeadbandController()
         # Deadband is 3.0, so within 1.5 of target = no action
-        assert not controller.should_act("dev1", current_value=23.0, target_value=22.0, deadband=3.0)
+        assert not controller.should_act(
+            "dev1", current_value=23.0, target_value=22.0, deadband=3.0
+        )
 
     def test_should_act_beyond_deadband_edge(self) -> None:
         controller = DeadbandController()

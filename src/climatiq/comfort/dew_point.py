@@ -12,9 +12,9 @@ import math
 def calculate_dew_point(temperature: float, humidity: float) -> float:
     """Calculate dew point using the Magnus formula.
 
-    Formula: Td = b * γ / (a - γ)
-    where γ = (a * T) / (b + T) + ln(RH / 100)
-    Constants: a = 17.27, b = 237.7°C
+    Formula: Td = b * gamma / (a - gamma)
+    where gamma = (a * T) / (b + T) + ln(RH / 100)
+    Constants: a = 17.27, b = 237.7
 
     Args:
         temperature: Air temperature in °C.

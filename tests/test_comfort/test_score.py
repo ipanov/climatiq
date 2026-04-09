@@ -1,7 +1,7 @@
 """Tests for aggregate comfort score."""
 
 from climatiq.comfort.score import calculate_comfort_score
-from climatiq.models.comfort import ComfortTarget, PMVResult, ComfortLevel
+from climatiq.models.comfort import ComfortLevel, PMVResult
 
 
 class TestComfortScore:

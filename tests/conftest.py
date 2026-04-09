@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from climatiq.models.home import Home, Zone
 from climatiq.models.comfort import ComfortTarget
+from climatiq.models.home import Home, Zone
 
 
 @pytest.fixture

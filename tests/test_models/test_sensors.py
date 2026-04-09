@@ -1,7 +1,5 @@
 """Tests for sensor domain models."""
 
-from datetime import datetime
-
 from climatiq.models.sensors import SensorReading, SensorType
 
 

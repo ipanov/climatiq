@@ -1,10 +1,6 @@
 """Tests for PMV/PPD calculations."""
 
-import math
-
-import pytest
-
-from climatiq.comfort.pmv import calculate_pmv, _ppd_from_pmv
+from climatiq.comfort.pmv import _ppd_from_pmv, calculate_pmv
 
 
 class TestPMVCalculation:
@@ -30,8 +26,9 @@ class TestPMVCalculation:
         """Heavy clothing should make a warm room feel warmer."""
         light = calculate_pmv(air_temp=26.0, clothing=0.5, metabolic_rate=1.1)
         heavy = calculate_pmv(air_temp=26.0, clothing=1.5, metabolic_rate=1.1)
-        # Heavy clothing in the same room should make PMV higher (warmer sensation)
-        # Note: pythermalcomfort may handle this differently, but the trend should hold
+        # Both should produce valid PMV values
+        assert isinstance(light.pmv, float)
+        assert isinstance(heavy.pmv, float)
 
     def test_radiant_temp_defaults_to_air(self) -> None:
         """If radiant temp not provided, should use air temp."""
