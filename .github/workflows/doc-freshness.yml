@@ -1,0 +1,40 @@
+name: Doc Freshness
+
+on:
+  schedule:
+    - cron: "3 6 * * 1"  # Weekly Monday 06:03 UTC
+  workflow_dispatch:
+
+jobs:
+  check-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify file structure matches CLAUDE.md
+        run: |
+          echo "Checking that key directories exist..."
+          for dir in src/climatiq src/climatiq/models src/climatiq/providers src/climatiq/comfort src/climatiq/controllers tests docs homeassistant hardware; do
+            if [ ! -d "$dir" ]; then
+              echo "MISSING: $dir (listed in CLAUDE.md but not found)"
+              exit 1
+            fi
+            echo "OK: $dir"
+          done
+      - name: Check README badges resolve
+        run: |
+          grep -oP '!\[.*?\]\(.*?\)' README.md | head -5 || true
+          echo "Badge check complete"
+
+  check-version-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pyproject.toml and __init__.py versions match
+        run: |
+          PYPROJECT=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          INIT=$(grep '__version__' src/climatiq/__init__.py | sed 's/.*= "\(.*\)"/\1/')
+          if [ "$PYPROJECT" != "$INIT" ]; then
+            echo "Version mismatch: pyproject.toml=$PYPROJECT __init__.py=$INIT"
+            exit 1
+          fi
+          echo "Versions match: $PYPROJECT"

@@ -1,0 +1,141 @@
+# ClimatIQ Example Home Configuration
+#
+# This demonstrates how to configure ClimatIQ for any home.
+# Replace values with your actual home layout, devices, and preferences.
+
+home:
+  name: "My Apartment"
+  latitude: 41.9973  # Skopje, Macedonia
+  longitude: 21.4280
+  timezone: "Europe/Skopje"
+  altitude_m: 240
+  zones:
+    - id: "living_room"
+      name: "Living Room"
+      window_bearing_deg: 180  # South-facing window
+      area_m2: 25
+      sensor_ids: ["lr_temp", "lr_humidity", "lr_pm25", "lr_co2"]
+      device_ids: ["lr_ac", "lr_purifier", "lr_humidifier"]
+
+    - id: "children_room"
+      name: "Children's Room"
+      window_bearing_deg: 270  # West-facing
+      area_m2: 15
+      sensor_ids: ["cr_temp", "cr_humidity"]
+      device_ids: ["cr_ac", "cr_purifier_plug"]
+
+    - id: "room_3"
+      name: "Room 3"
+      window_bearing_deg: 0  # North-facing
+      area_m2: 12
+      sensor_ids: ["r3_temp"]
+      device_ids: ["r3_ac"]
+
+    - id: "room_4"
+      name: "Room 4"
+      window_bearing_deg: 90  # East-facing
+      area_m2: 12
+      sensor_ids: ["r4_temp"]
+      device_ids: ["r4_ac"]
+
+# Device definitions
+devices:
+  # HVAC units
+  - id: "lr_ac"
+    name: "Living Room AC"
+    device_type: "hvac"
+    capabilities: 31  # ON_OFF | TEMP_SETPOINT | MODE_SELECT | FAN_SPEED | SWING
+    zone_id: "living_room"
+    provider: "esphome"
+    entity_id: "climate.living_room_ac"
+    min_runtime_minutes: 5
+
+  - id: "cr_ac"
+    name: "Children's Room AC"
+    device_type: "hvac"
+    capabilities: 31
+    zone_id: "children_room"
+    provider: "esphome"
+    entity_id: "climate.children_room_ac"
+
+  - id: "r3_ac"
+    name: "Room 3 AC"
+    device_type: "hvac"
+    capabilities: 31
+    zone_id: "room_3"
+    provider: "esphome"
+    entity_id: "climate.room3_ac"
+
+  - id: "r4_ac"
+    name: "Room 4 AC"
+    device_type: "hvac"
+    capabilities: 31
+    zone_id: "room_4"
+    provider: "esphome"
+    entity_id: "climate.room4_ac"
+
+  # Air purifier
+  - id: "lr_purifier"
+    name: "Xiaomi Air Purifier 3H"
+    device_type: "purifier"
+    capabilities: 69  # ON_OFF | MODE_SELECT | SPEED_PERCENTAGE
+    zone_id: "living_room"
+    provider: "homeassistant"
+    entity_id: "fan.xiaomi_air_purifier_3h"
+
+  # Humidifier
+  - id: "lr_humidifier"
+    name: "Smartmi Humidifier 2"
+    device_type: "humidifier"
+    capabilities: 165  # ON_OFF | HUMIDITY_SETPOINT | MODE_SELECT | TARGET_HUMIDITY
+    zone_id: "living_room"
+    provider: "homeassistant"
+    entity_id: "humidifier.smartmi_evaporative_humidifier_2"
+
+  # Smart plug for dumb purifier
+  - id: "cr_purifier_plug"
+    name: "Blueair 411 Plug"
+    device_type: "switch"
+    capabilities: 1  # ON_OFF only
+    zone_id: "children_room"
+    provider: "homeassistant"
+    entity_id: "switch.shelly_blueair"
+
+# Comfort targets per zone
+targets:
+  - zone_id: "living_room"
+    temperature_min: 20.0
+    temperature_max: 25.0
+    humidity_min: 30.0
+    humidity_max: 60.0
+    pmv_target: 0.0
+    pmv_tolerance: 0.5
+    dew_point_max: 15.0
+
+  - zone_id: "children_room"
+    temperature_min: 20.0
+    temperature_max: 25.5  # Slightly warmer for children
+    humidity_min: 30.0
+    humidity_max: 60.0
+    pmv_target: 0.0
+    pmv_tolerance: 0.5
+    dew_point_max: 15.0
+
+  - zone_id: "room_3"
+    temperature_min: 19.0
+    temperature_max: 25.0
+    humidity_min: 25.0
+    humidity_max: 65.0
+
+  - zone_id: "room_4"
+    temperature_min: 19.0
+    temperature_max: 25.0
+    humidity_min: 25.0
+    humidity_max: 65.0
+
+# Optional: custom schedule (uses defaults if not specified)
+# schedule:
+#   - season: "summer"
+#     period: "morning"
+#     temperature_target: 24.0
+#     humidity_target: 45.0

@@ -67,3 +67,14 @@ logs/
 # Compiled / cached
 *.pyc
 .cache/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# MyPy
+.mypy_cache/
