@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install ruff mypy pydantic pythermalcomfort
+        run: pip install ruff mypy pydantic pythermalcomfort types-PyYAML
       - name: Ruff lint
         run: ruff check src/ tests/
       - name: Ruff format check
