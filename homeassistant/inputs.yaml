@@ -1,0 +1,123 @@
+###############################################################################
+# ClimatIQ - Input Helpers
+# User-configurable parameters for the climate control system.
+#
+# These inputs allow manual tuning without editing automations.
+# Access them via Settings > Helpers in the HA UI.
+###############################################################################
+
+##############################################################################
+# WINDOW BEARING - Direction each room's window faces (degrees from North)
+# Used by solar load template sensors to calculate sun exposure.
+# Adjust these to match actual apartment layout.
+# 0=North, 90=East, 180=South, 270=West
+##############################################################################
+room1_window_bearing:
+  name: "Room 1 Window Bearing (Living Room)"
+  min: 0
+  max: 360
+  step: 1
+  unit: "°"
+  initial: 180
+  icon: mdi:compass
+
+room2_window_bearing:
+  name: "Room 2 Window Bearing (Children's Room)"
+  min: 0
+  max: 360
+  step: 1
+  unit: "°"
+  initial: 270
+  icon: mdi:compass
+
+room3_window_bearing:
+  name: "Room 3 Window Bearing"
+  min: 0
+  max: 360
+  step: 1
+  unit: "°"
+  initial: 0
+  icon: mdi:compass
+
+room4_window_bearing:
+  name: "Room 4 Window Bearing"
+  min: 0
+  max: 360
+  step: 1
+  unit: "°"
+  initial: 90
+  icon: mdi:compass
+
+##############################################################################
+# CLOTHING INSULATION (clo value)
+# ASHRAE 55 thermal comfort parameter.
+# Typical values:
+#   0.3 - Light summer clothing (shorts, t-shirt)
+#   0.5 - Light trousers, short sleeves
+#   0.7 - Typical indoor clothing (default)
+#   1.0 - Business casual (trousers, long sleeves, light jacket)
+#   1.5 - Heavy winter clothing (coat, sweater, thick trousers)
+# Adjusting this shifts the comfort temperature range.
+##############################################################################
+clothing_insulation:
+  name: "Clothing Insulation (clo)"
+  min: 0.3
+  max: 1.5
+  step: 0.1
+  unit: "clo"
+  initial: 0.7
+  icon: mdi:tshirt-crew
+
+##############################################################################
+# METABOLIC RATE (met value)
+# ASHRAE 55 thermal comfort parameter.
+# Typical values:
+#   0.8 - Sleeping / resting
+#   1.0 - Sedentary (desk work)
+#   1.1 - Light activity (default - typical home)
+#   1.4 - Light manual work (cooking, tidying)
+#   2.0 - Moderate activity (exercise, cleaning)
+# Higher metabolic rate = body generates more heat = prefer cooler temps.
+##############################################################################
+metabolic_rate:
+  name: "Metabolic Rate (met)"
+  min: 0.8
+  max: 2.0
+  step: 0.1
+  unit: "met"
+  initial: 1.1
+  icon: mdi:run
+
+##############################################################################
+# TEMPERATURE DEADBAND
+# Width of the temperature deadband in degrees C.
+# The AC will not adjust unless temperature deviates from target by more
+# than half this value. Prevents short-cycling (rapid on/off).
+# Default: 1.5 C (comfortable, moderate energy use)
+# Narrower (0.5): more precise, more energy use
+# Wider (3.0): less precise, more energy efficient
+##############################################################################
+deadband_temperature:
+  name: "Temperature Deadband"
+  min: 0.5
+  max: 3.0
+  step: 0.1
+  unit: "°C"
+  initial: 1.5
+  icon: mdi:thermometer-plus
+
+##############################################################################
+# HUMIDITY DEADBAND
+# Width of the humidity deadband in percent RH.
+# The humidifier will not toggle unless humidity deviates from target by
+# more than half this value. Prevents rapid cycling.
+# Default: 5% (standard comfort deadband)
+##############################################################################
+deadband_humidity:
+  name: "Humidity Deadband"
+  min: 1
+  max: 15
+  step: 1
+  unit: "%"
+  initial: 5
+  icon: mdi:water-plus

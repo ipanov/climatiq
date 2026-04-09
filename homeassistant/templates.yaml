@@ -1,0 +1,472 @@
+###############################################################################
+# ClimatIQ - Template Sensors
+# All computed climate intelligence sensors for ASHRAE 55 compliance
+#
+# These templates derive actionable intelligence from raw sensor data:
+# season, time period, target temps, solar loads, ventilation advice, etc.
+###############################################################################
+
+- sensor:
+    ###########################################################################
+    # CURRENT SEASON
+    # Month-based determination for Skopje continental climate.
+    # Dec-Feb = winter, Jun-Aug = summer, Mar-May = spring, Sep-Nov = autumn
+    ###########################################################################
+    - name: "Current Season"
+      unique_id: current_season
+      state: >-
+        {% set m = now().month %}
+        {% if m in (12, 1, 2) %}winter
+        {% elif m in (6, 7, 8) %}summer
+        {% elif m in (3, 4, 5) %}spring
+        {% else %}autumn{% endif %}
+      icon: >-
+        {% set m = now().month %}
+        {% if m in (12, 1, 2) %}mdi:snowflake
+        {% elif m in (6, 7, 8) %}mdi:white-balance-sunny
+        {% elif m in (3, 4, 5) %}mdi:flower
+        {% else %}mdi:leaf{% endif %}
+
+    ###########################################################################
+    # TIME PERIOD
+    # Breaks the day into 7 periods for temperature target adjustments.
+    # ASHRAE 55 allows different comfort ranges at different times of day.
+    #   deep_night:   00:00 - 05:59  (sleep, reduced metabolism)
+    #   morning:      06:00 - 08:59  (waking up, met increasing)
+    #   late_morning: 09:00 - 11:59  (active, normal met)
+    #   early_aftern: 12:00 - 14:59  (peak activity)
+    #   late_aftern:  15:00 - 17:59  (solar load fading)
+    #   evening:      18:00 - 20:59  (met decreasing)
+    #   night:        21:00 - 23:59  (pre-sleep cooldown)
+    ###########################################################################
+    - name: "Time Period"
+      unique_id: time_period
+      state: >-
+        {% set h = now().hour %}
+        {% if h < 6 %}deep_night
+        {% elif h < 9 %}morning
+        {% elif h < 12 %}late_morning
+        {% elif h < 15 %}early_afternoon
+        {% elif h < 18 %}late_afternoon
+        {% elif h < 21 %}evening
+        {% else %}night{% endif %}
+      icon: >-
+        {% set h = now().hour %}
+        {% if h < 6 %}mdi:weather-night
+        {% elif h < 12 %}mdi:weather-sunny
+        {% elif h < 18 %}mdi:white-balance-sunny
+        {% else %}mdi:weather-sunset{% endif %}
+
+    ###########################################################################
+    # TARGET TEMPERATURE
+    # ASHRAE 55 Recommended Operating Temperatures:
+    #   Summer: 23.5 - 26.5 C (use 24 C as target)
+    #   Winter: 20.5 - 24.0 C (use 22 C as target)
+    #   Spring/Autumn: 22.5 - 25.0 C (use 23 C as target)
+    # Adjustments:
+    #   sleep periods (deep_night, night): -2 C
+    #   morning: +1 C (compensate for lower metabolic rate on waking)
+    #   vacation_mode: eco target (season base - 2 C)
+    #   eco mode: base - 1 C
+    #   comfort mode: base + 0.5 C
+    #   guest_mode: comfort (guests may have different adaptation)
+    ###########################################################################
+    - name: "Target Temperature"
+      unique_id: target_temperature
+      unit_of_measurement: "°C"
+      state: >-
+        {% set season = states('sensor.current_season') %}
+        {% set period = states('sensor.time_period') %}
+        {% set mode = states('input_select.climate_mode') %}
+        {% set vacation = is_state('input_boolean.vacation_mode', 'on') %}
+        {% set guest = is_state('input_boolean.guest_mode', 'on') %}
+        {% set deadband = states('input_number.deadband_temperature') | float(1.5) %}
+        {% set base = {
+          'summer': 24.0, 'winter': 22.0, 'spring': 23.0, 'autumn': 23.0
+        } %}
+        {% set t = base.get(season, 23.0) | float %}
+        {# Sleep adjustment #}
+        {% if period in ['deep_night', 'night'] %}
+          {% set t = t - 2.0 %}
+        {% endif %}
+        {# Morning boost #}
+        {% if period == 'morning' %}
+          {% set t = t + 1.0 %}
+        {% endif %}
+        {# Mode overrides #}
+        {% if vacation %}
+          {% set t = t - 2.0 %}
+        {% elif mode == 'eco' %}
+          {% set t = t - 1.0 %}
+        {% elif mode == 'comfort' %}
+          {% set t = t + 0.5 %}
+        {% elif mode == 'away' %}
+          {% set t = t - 3.0 %}
+        {% elif mode == 'sleep' %}
+          {% set t = t - 2.0 %}
+        {% endif %}
+        {# Guest comfort #}
+        {% if guest %}
+          {% set t = t + 0.5 %}
+        {% endif %}
+        {{ t | round(1) }}
+      icon: mdi:thermometer
+
+    ###########################################################################
+    # TARGET HUMIDITY
+    # ASHRAE 55 recommends 30-60% RH. Narrower bands for comfort:
+    #   Winter: 30-40% (cold outdoor = low indoor, condensation risk above 40%)
+    #   Summer: 45-50% (humidity comfort, avoid mold above 60%)
+    #   Spring/Autumn: 40-45% (transition)
+    # Additionally lowers target when outdoor temp < 0 C (condensation).
+    ###########################################################################
+    - name: "Target Humidity"
+      unique_id: target_humidity
+      unit_of_measurement: "%"
+      state: >-
+        {% set season = states('sensor.current_season') %}
+        {% set outdoor_temp = states('sensor.open_meteo_temperature') | float(15) %}
+        {% set base = {
+          'winter': 35, 'summer': 47, 'spring': 42, 'autumn': 42
+        } %}
+        {% set t = base.get(season, 40) | int %}
+        {# Lower target when very cold outside to prevent condensation #}
+        {% if outdoor_temp < -5 %}
+          {% set t = 30 %}
+        {% elif outdoor_temp < 0 %}
+          {% set t = 32 %}
+        {% endif %}
+        {{ t }}
+      icon: mdi:water-percent
+
+    ###########################################################################
+    # AIR QUALITY ACTION
+    # Maps AQI value to a recommended action level.
+    # AQI breakpoints per US EPA standard:
+    #   0-50:   good                  - no action
+    #   51-100: moderate              - consider filtering
+    #   101-150: unhealthy_sensitive  - filter for sensitive groups
+    #   151-200: unhealthy            - filter for everyone
+    #   201+:   dangerous             - seal windows, max filtration
+    ###########################################################################
+    - name: "Air Quality Action"
+      unique_id: air_quality_action
+      state: >-
+        {% set aqi = states('sensor.waqi') | int(0) %}
+        {% if aqi <= 50 %}good
+        {% elif aqi <= 100 %}moderate
+        {% elif aqi <= 150 %}unhealthy_sensitive
+        {% elif aqi <= 200 %}unhealthy
+        {% else %}dangerous{% endif %}
+      icon: >-
+        {% set aqi = states('sensor.waqi') | int(0) %}
+        {% if aqi <= 50 %}mdi:emoticon-happy
+        {% elif aqi <= 100 %}mdi:emoticon-neutral
+        {% elif aqi <= 150 %}mdi:emoticon-sad
+        {% elif aqi <= 200 %}mdi:emoticon-frown
+        {% else %}mdi:skull-crossbones{% endif %}
+
+    ###########################################################################
+    # VENTILATION ADVICE
+    # Determines whether opening windows is beneficial.
+    # Considers: AQI, outdoor temp, outdoor humidity, dew point,
+    #            indoor-outdoor temp differential.
+    # open_windows:  Good AQI + outdoor temp in comfort range
+    # keep_closed:   Bad AQI or outdoor conditions worse than indoor
+    # ac_preferred:  Use AC instead (too hot/cold outside, or high AQI)
+    ###########################################################################
+    - name: "Ventilation Advice"
+      unique_id: ventilation_advice
+      state: >-
+        {% set aqi = states('sensor.waqi') | int(0) %}
+        {% set aqi_action = states('sensor.air_quality_action') %}
+        {% set outdoor_temp = states('sensor.open_meteo_temperature') | float(15) %}
+        {% set outdoor_hum = states('sensor.open_meteo_humidity') | float(50) %}
+        {% set dew_pt = states('sensor.open_meteo_dew_point') | float(10) %}
+        {% set indoor_temp = states('sensor.living_room_temperature') | float(22) %}
+        {% set indoor_hum = states('sensor.living_room_humidity') | float(45) %}
+        {# Bad air quality = keep windows closed #}
+        {% if aqi > 100 %}
+          ac_preferred
+        {# Too cold outside (< 10C) or too hot (> 30C) #}
+        {% elif outdoor_temp < 10 or outdoor_temp > 30 %}
+          ac_preferred
+        {# High outdoor humidity would bring moisture inside #}
+        {% elif outdoor_hum > 75 and outdoor_temp > indoor_temp %}
+          keep_closed
+        {# Dew point too high - uncomfortable air #}
+        {% elif dew_pt > 18 %}
+          ac_preferred
+        {# Good conditions for natural ventilation #}
+        {% elif aqi <= 50 and outdoor_temp >= 15 and outdoor_temp <= 27 %}
+          open_windows
+        {# Moderate AQI but acceptable temps #}
+        {% elif aqi <= 75 and outdoor_temp >= 15 and outdoor_temp <= 25 %}
+          open_windows
+        {% else %}
+          keep_closed
+        {% endif %}
+      icon: >-
+        {% set advice = 'REPLACE_ME' %}
+        {% if states('sensor.ventilation_advice') == 'open_windows' %}
+          mdi:window-open-variant
+        {% elif states('sensor.ventilation_advice') == 'ac_preferred' %}
+          mdi:air-conditioner
+        {% else %}
+          mdi:window-closed-variant
+        {% endif %}
+
+    ###########################################################################
+    # SUN EXPOSURE INTENSITY
+    # Global solar intensity based on sun elevation, azimuth, and cloud cover.
+    # Used by room-level solar load sensors (below).
+    #   none:   elevation < 5 or after sunset
+    #   low:    elevation 5-20 or cloud cover > 80%
+    #   medium: elevation 20-50 and cloud cover 40-80%
+    #   high:   elevation > 50 and cloud cover < 40%
+    ###########################################################################
+    - name: "Sun Exposure Intensity"
+      unique_id: sun_exposure_intensity
+      state: >-
+        {% set sun_state = states('sun.sun') %}
+        {% if sun_state == 'below_horizon' %}none
+        {% else %}
+          {% set elev = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set clouds = states('sensor.open_meteo_cloud_cover') | float(50) %}
+          {% if elev < 5 %}none
+          {% elif clouds > 85 %}low
+          {% elif elev < 20 %}low
+          {% elif elev > 50 and clouds < 40 %}high
+          {% elif elev > 30 and clouds < 60 %}medium
+          {% else %}low{% endif %}
+        {% endif %}
+      icon: >-
+        {% set s = states('sensor.sun_exposure_intensity') %}
+        {% if s == 'high' %}mdi:white-balance-sunny
+        {% elif s == 'medium' %}mdi:weather-partly-cloudy
+        {% elif s == 'low' %}mdi:weather-cloudy
+        {% else %}mdi:weather-night{% endif %}
+
+    ###########################################################################
+    # ROOM SOLAR LOAD SENSORS (Room 1-4)
+    # Estimates solar heat gain per room based on:
+    #   - Window bearing (from input_number.room{n}_window_bearing)
+    #   - Sun azimuth (how directly sun hits the window)
+    #   - Sun elevation (higher = more intense at low angles)
+    #   - Cloud cover (diffuses and reduces solar radiation)
+    #   - Season (summer sun is higher = less direct gain on vertical windows)
+    # Output: none / low / medium / high
+    #
+    # Solar load logic:
+    #   1. Calculate angular difference between sun azimuth and window bearing
+    #   2. Direct exposure: angle diff < 45 degrees = facing the sun
+    #   3. Indirect: 45-90 = partial, >90 = back to sun
+    #   4. Modulate by elevation and cloud cover
+    ###########################################################################
+    - name: "Room 1 Solar Load"
+      unique_id: room1_solar_load
+      state: >-
+        {% set intensity = states('sensor.sun_exposure_intensity') %}
+        {% if intensity == 'none' %}none
+        {% else %}
+          {% set sun_az = state_attr('sun.sun', 'azimuth') | float(0) %}
+          {% set sun_el = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set win_bearing = states('input_number.room1_window_bearing') | float(180) %}
+          {% set clouds = states('sensor.open_meteo_cloud_cover') | float(50) %}
+          {% set diff = ((sun_az - win_bearing + 180) % 360) - 180 %}
+          {% set facing = diff | abs < 45 %}
+          {% set partial = diff | abs < 90 %}
+          {% if not partial or clouds > 85 %}none
+          {% elif facing and sun_el > 15 and clouds < 50 %}high
+          {% elif facing and clouds < 70 %}medium
+          {% elif partial and clouds < 50 %}medium
+          {% else %}low{% endif %}
+        {% endif %}
+      icon: mdi:solar-power-variant
+
+    - name: "Room 2 Solar Load"
+      unique_id: room2_solar_load
+      state: >-
+        {% set intensity = states('sensor.sun_exposure_intensity') %}
+        {% if intensity == 'none' %}none
+        {% else %}
+          {% set sun_az = state_attr('sun.sun', 'azimuth') | float(0) %}
+          {% set sun_el = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set win_bearing = states('input_number.room2_window_bearing') | float(270) %}
+          {% set clouds = states('sensor.open_meteo_cloud_cover') | float(50) %}
+          {% set diff = ((sun_az - win_bearing + 180) % 360) - 180 %}
+          {% set facing = diff | abs < 45 %}
+          {% set partial = diff | abs < 90 %}
+          {% if not partial or clouds > 85 %}none
+          {% elif facing and sun_el > 15 and clouds < 50 %}high
+          {% elif facing and clouds < 70 %}medium
+          {% elif partial and clouds < 50 %}medium
+          {% else %}low{% endif %}
+        {% endif %}
+      icon: mdi:solar-power-variant
+
+    - name: "Room 3 Solar Load"
+      unique_id: room3_solar_load
+      state: >-
+        {% set intensity = states('sensor.sun_exposure_intensity') %}
+        {% if intensity == 'none' %}none
+        {% else %}
+          {% set sun_az = state_attr('sun.sun', 'azimuth') | float(0) %}
+          {% set sun_el = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set win_bearing = states('input_number.room3_window_bearing') | float(0) %}
+          {% set clouds = states('sensor.open_meteo_cloud_cover') | float(50) %}
+          {% set diff = ((sun_az - win_bearing + 180) % 360) - 180 %}
+          {% set facing = diff | abs < 45 %}
+          {% set partial = diff | abs < 90 %}
+          {% if not partial or clouds > 85 %}none
+          {% elif facing and sun_el > 15 and clouds < 50 %}high
+          {% elif facing and clouds < 70 %}medium
+          {% elif partial and clouds < 50 %}medium
+          {% else %}low{% endif %}
+        {% endif %}
+      icon: mdi:solar-power-variant
+
+    - name: "Room 4 Solar Load"
+      unique_id: room4_solar_load
+      state: >-
+        {% set intensity = states('sensor.sun_exposure_intensity') %}
+        {% if intensity == 'none' %}none
+        {% else %}
+          {% set sun_az = state_attr('sun.sun', 'azimuth') | float(0) %}
+          {% set sun_el = state_attr('sun.sun', 'elevation') | float(0) %}
+          {% set win_bearing = states('input_number.room4_window_bearing') | float(90) %}
+          {% set clouds = states('sensor.open_meteo_cloud_cover') | float(50) %}
+          {% set diff = ((sun_az - win_bearing + 180) % 360) - 180 %}
+          {% set facing = diff | abs < 45 %}
+          {% set partial = diff | abs < 90 %}
+          {% if not partial or clouds > 85 %}none
+          {% elif facing and sun_el > 15 and clouds < 50 %}high
+          {% elif facing and clouds < 70 %}medium
+          {% elif partial and clouds < 50 %}medium
+          {% else %}low{% endif %}
+        {% endif %}
+      icon: mdi:solar-power-variant
+
+    ###########################################################################
+    # ROOM TEMPERATURE DIFFERENTIAL (Room 1-4)
+    # Indoor temperature minus outdoor temperature.
+    # Positive = indoor warmer (heating mode or solar gain).
+    # Negative = indoor cooler (cooling mode or cold outdoor).
+    # Used to determine free cooling potential and heating/cooling demand.
+    ###########################################################################
+    - name: "Room 1 Temp Differential"
+      unique_id: room1_temp_differential
+      unit_of_measurement: "°C"
+      state: >-
+        {{ (states('sensor.room1_ac_temperature') | float(22)
+           - states('sensor.open_meteo_temperature') | float(15)) | round(1) }}
+      icon: mdi:thermometer-lines
+
+    - name: "Room 2 Temp Differential"
+      unique_id: room2_temp_differential
+      unit_of_measurement: "°C"
+      state: >-
+        {{ (states('sensor.room2_ac_temperature') | float(22)
+           - states('sensor.open_meteo_temperature') | float(15)) | round(1) }}
+      icon: mdi:thermometer-lines
+
+    - name: "Room 3 Temp Differential"
+      unique_id: room3_temp_differential
+      unit_of_measurement: "°C"
+      state: >-
+        {{ (states('sensor.room3_ac_temperature') | float(22)
+           - states('sensor.open_meteo_temperature') | float(15)) | round(1) }}
+      icon: mdi:thermometer-lines
+
+    - name: "Room 4 Temp Differential"
+      unique_id: room4_temp_differential
+      unit_of_measurement: "°C"
+      state: >-
+        {{ (states('sensor.room4_ac_temperature') | float(22)
+           - states('sensor.open_meteo_temperature') | float(15)) | round(1) }}
+      icon: mdi:thermometer-lines
+
+    ###########################################################################
+    # LIVING ROOM DEW POINT
+    # Calculated from temperature and relative humidity using Magnus formula.
+    # Used to assess condensation risk and comfort.
+    # Formula: Td = b * gamma / (a - gamma)
+    #   where gamma = a*T / (b+T) + ln(RH/100)
+    #   a = 17.27, b = 237.7 C
+    ###########################################################################
+    - name: "Living Room Dew Point"
+      unique_id: living_room_dew_point
+      unit_of_measurement: "°C"
+      state: >-
+        {% set t = states('sensor.living_room_temperature') | float(22) %}
+        {% set rh = states('sensor.living_room_humidity') | float(45) %}
+        {% set a = 17.27 %}
+        {% set b = 237.7 %}
+        {% set gamma = (a * t / (b + t)) + (rh / 100 | log) %}
+        {{ (b * gamma / (a - gamma)) | round(1) }}
+      icon: mdi:water-thermometer
+
+    ###########################################################################
+    # CHILDREN'S ROOM DEW POINT
+    # Same Magnus formula using children's room sensors.
+    ###########################################################################
+    - name: "Children Room Dew Point"
+      unique_id: children_room_dew_point
+      unit_of_measurement: "°C"
+      state: >-
+        {% set t = states('sensor.children_room_temperature') | float(22) %}
+        {% set rh = states('sensor.children_room_humidity') | float(45) %}
+        {% set a = 17.27 %}
+        {% set b = 237.7 %}
+        {% set gamma = (a * t / (b + t)) + (rh / 100 | log) %}
+        {{ (b * gamma / (a - gamma)) | round(1) }}
+      icon: mdi:water-thermometer
+
+    ###########################################################################
+    # INDOOR COMFORT INDEX (living room)
+    # Simplified PMV-like metric using temperature, humidity, season.
+    # Returns: comfortable / slightly_warm / warm / hot / slightly_cool / cool / cold
+    # Based on ASHRAE 7-point scale approximation.
+    ###########################################################################
+    - name: "Indoor Comfort Index"
+      unique_id: indoor_comfort_index
+      state: >-
+        {% set t = states('sensor.living_room_temperature') | float(22) %}
+        {% set rh = states('sensor.living_room_humidity') | float(45) %}
+        {% set season = states('sensor.current_season') %}
+        {% set target = states('sensor.target_temperature') | float(22) %}
+        {% set diff = t - target %}
+        {% if diff > 4 %}hot
+        {% elif diff > 2 %}warm
+        {% elif diff > 1 %}slightly_warm
+        {% elif diff > -1 %}comfortable
+        {% elif diff > -2 %}slightly_cool
+        {% elif diff > -4 %}cool
+        {% else %}cold{% endif %}
+      icon: >-
+        {% set t = states('sensor.living_room_temperature') | float(22) %}
+        {% set target = states('sensor.target_temperature') | float(22) %}
+        {% set diff = t - target %}
+        {% if diff > 2 %}mdi:fire
+        {% elif diff > 0 %}mdi:emoticon-neutral
+        {% elif diff > -1 %}mdi:emoticon-happy
+        {% else %}mdi:snowflake{% endif %}
+
+- binary_sensor:
+    ###########################################################################
+    # FREE COOLING AVAILABLE
+    # True when outdoor conditions are suitable for natural ventilation
+    # to cool the apartment instead of running AC.
+    # Conditions:
+    #   - Outdoor temp between 15-25 C (comfort range)
+    #   - Outdoor humidity < 70% (not too humid)
+    #   - AQI < 75 (acceptable air quality)
+    #   - Indoor temp > outdoor temp (would actually cool)
+    #   - Outdoor dew point < 16 C (not muggy)
+    ###########################################################################
+    - name: "Free Cooling Available"
+      unique_id: free_cooling_available
+      state: >-
+        {{ states('sensor.ventilation_advice') == 'open_windows'
+           and states('sensor.room1_temp_differential') | float(0) > 2 }}
+      icon: mdi:fan

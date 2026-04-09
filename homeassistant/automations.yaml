@@ -1,0 +1,722 @@
+###############################################################################
+# ClimatIQ - Automations
+# ASHRAE 55-based climate intelligence automations
+#
+# All automations check input_boolean.vacation_mode and input_select.climate_mode
+# before acting. Vacation mode disables non-essential automations.
+###############################################################################
+
+- alias: "Climate Intelligence Master Controller"
+  id: climatiq_master_controller
+  description: >-
+    Runs every 15 minutes. Adjusts all 4 AC units based on season,
+    target temperature, solar load, and mode overrides.
+    This is the central brain of the climate system.
+  trigger:
+    - trigger: time_pattern
+      minutes: "/15"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+    - condition: template
+      value_template: >-
+        {{ states('input_select.climate_mode') != 'away' }}
+  action:
+    ###########################################################################
+    # LIVING ROOM AC (Room 1)
+    ###########################################################################
+    - choose:
+        # Pre-cool: solar load is high, lower target by 2 C
+        - conditions:
+            - condition: state
+              entity_id: sensor.room1_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.living_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 2) | round(1) }}
+                hvac_mode: "cool"
+        # Solar load medium: lower target by 1 C
+        - conditions:
+            - condition: state
+              entity_id: sensor.room1_solar_load
+              state: "medium"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.living_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: >-
+                  {% set season = states('sensor.current_season') %}
+                  {% if season == 'summer' %}cool
+                  {% elif season == 'winter' %}heat
+                  {% else %}auto{% endif %}
+      # Default: set to target temperature
+      default:
+        - service: climate.set_temperature
+          target:
+            entity_id: climate.living_room_ac
+          data:
+            temperature: >-
+              {{ states('sensor.target_temperature') | float(22) | round(1) }}
+            hvac_mode: >-
+              {% set season = states('sensor.current_season') %}
+              {% if season == 'summer' %}cool
+              {% elif season == 'winter' %}heat
+              {% else %}auto{% endif %}
+
+    ###########################################################################
+    # CHILDREN'S ROOM AC (Room 2)
+    # Same logic as Room 1 with its own solar load sensor.
+    # Children's room target is 0.5 C warmer in winter for safety.
+    ###########################################################################
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room2_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.children_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 2) | round(1) }}
+                hvac_mode: "cool"
+        - conditions:
+            - condition: state
+              entity_id: sensor.room2_solar_load
+              state: "medium"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.children_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: >-
+                  {% set season = states('sensor.current_season') %}
+                  {% if season == 'summer' %}cool
+                  {% elif season == 'winter' %}heat
+                  {% else %}auto{% endif %}
+      default:
+        - service: climate.set_temperature
+          target:
+            entity_id: climate.children_room_ac
+          data:
+            temperature: >-
+              {% set base = states('sensor.target_temperature') | float(22) %}
+              {% if states('sensor.current_season') == 'winter' %}
+                {{ (base + 0.5) | round(1) }}
+              {% else %}
+                {{ base | round(1) }}
+              {% endif %}
+            hvac_mode: >-
+              {% set season = states('sensor.current_season') %}
+              {% if season == 'summer' %}cool
+              {% elif season == 'winter' %}heat
+              {% else %}auto{% endif %}
+
+    ###########################################################################
+    # ROOM 3 AC
+    ###########################################################################
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room3_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.room3_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 2) | round(1) }}
+                hvac_mode: "cool"
+      default:
+        - service: climate.set_temperature
+          target:
+            entity_id: climate.room3_ac
+          data:
+            temperature: >-
+              {{ states('sensor.target_temperature') | float(22) | round(1) }}
+            hvac_mode: >-
+              {% set season = states('sensor.current_season') %}
+              {% if season == 'summer' %}cool
+              {% elif season == 'winter' %}heat
+              {% else %}auto{% endif %}
+
+    ###########################################################################
+    # ROOM 4 AC
+    ###########################################################################
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room4_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.room4_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 2) | round(1) }}
+                hvac_mode: "cool"
+      default:
+        - service: climate.set_temperature
+          target:
+            entity_id: climate.room4_ac
+          data:
+            temperature: >-
+              {{ states('sensor.target_temperature') | float(22) | round(1) }}
+            hvac_mode: >-
+              {% set season = states('sensor.current_season') %}
+              {% if season == 'summer' %}cool
+              {% elif season == 'winter' %}heat
+              {% else %}auto{% endif %}
+
+###############################################################################
+# S8 BATTERY CYCLING
+# Lithium battery health: keep between 20-80% for maximum lifespan.
+# Stops charging at 80%, resumes at 20%. Uses Shelly plug for control.
+###############################################################################
+- alias: "S8 Battery Cycling"
+  id: climatiq_s8_battery_cycling
+  description: >-
+    Maintains Galaxy S8 battery between 20-80% via Shelly plug to extend
+    lithium battery lifespan.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.galaxy_s8_battery_level
+      above: 80
+      id: "upper"
+    - trigger: numeric_state
+      entity_id: sensor.galaxy_s8_battery_level
+      below: 20
+      id: "lower"
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: "upper"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: switch.shelly_s8_charger
+        - conditions:
+            - condition: trigger
+              id: "lower"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: switch.shelly_s8_charger
+
+###############################################################################
+# SMARTMI HUMIDIFIER CONTROL
+# Maintains target humidity with 5% hysteresis.
+# Silent mode at night (10 PM - 7 AM).
+# Winter adjustment: target humidity lowered when outdoor temp < 0 C.
+###############################################################################
+- alias: "Smartmi Humidifier Control"
+  id: climatiq_smartmi_humidifier
+  description: >-
+    Controls Smartmi Evaporative Humidifier 2 based on target humidity
+    with deadband. Silent mode at night. Winter condensation protection.
+  trigger:
+    - trigger: time_pattern
+      minutes: "/10"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+  action:
+    - variables:
+        current_hum: >-
+          {{ states('sensor.living_room_humidity') | float(45) }}
+        target_hum: >-
+          {{ states('sensor.target_humidity') | int(40) }}
+        deadband: >-
+          {{ states('input_number.deadband_humidity') | int(5) }}
+        is_night: >-
+          {{ now().hour >= 22 or now().hour < 7 }}
+    - choose:
+        # Turn ON: humidity below target minus deadband
+        - conditions:
+            - condition: template
+              value_template: >-
+                {{ current_hum < (target_hum - deadband) }}
+          sequence:
+            - service: humidifier.turn_on
+              target:
+                entity_id: humidifier.smartmi_evaporative_humidifier_2
+            - service: humidifier.set_mode
+              target:
+                entity_id: humidifier.smartmi_evaporative_humidifier_2
+              data:
+                mode: >-
+                  {{ 'silent' if is_night else 'auto' }}
+            - service: humidifier.set_humidity
+              target:
+                entity_id: humidifier.smartmi_evaporative_humidifier_2
+              data:
+                humidity: "{{ target_hum }}"
+        # Turn OFF: humidity above target plus deadband
+        - conditions:
+            - condition: template
+              value_template: >-
+                {{ current_hum > (target_hum + deadband) }}
+          sequence:
+            - service: humidifier.turn_off
+              target:
+                entity_id: humidifier.smartmi_evaporative_humidifier_2
+      # Within deadband: do nothing
+
+###############################################################################
+# BLUEAIR 411 CONTROL (via Shelly plug)
+# Simple on/off via Shelly plug. No speed control available.
+# ON when: AQI > 100 OR it is bedtime (22:00)
+# OFF when: AQI < 50 AND free cooling available (open windows can help)
+###############################################################################
+- alias: "Blueair 411 Control"
+  id: climatiq_blueair_411
+  description: >-
+    Controls Blueair 411 air purifier via Shelly plug.
+    Reactive to AQI, scheduled at bedtime, pauses for free cooling.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.waqi
+      above: 100
+      id: "aqi_high"
+    - trigger: numeric_state
+      entity_id: sensor.waqi
+      below: 50
+      id: "aqi_low"
+    - trigger: time
+      at: "22:00:00"
+      id: "bedtime"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: "aqi_high"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: switch.shelly_blueair
+        - conditions:
+            - condition: trigger
+              id: "bedtime"
+          sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: switch.shelly_blueair
+        - conditions:
+            - condition: trigger
+              id: "aqi_low"
+            - condition: state
+              entity_id: binary_sensor.free_cooling_available
+              state: "on"
+          sequence:
+            - service: switch.turn_off
+              target:
+                entity_id: switch.shelly_blueair
+
+###############################################################################
+# XIAOMI PURIFIER 3H CONTROL
+# PM2.5-reactive speed control with night quiet mode.
+# Speed mapping:
+#   PM2.5 > 35:   max (Auto mode, high fan)
+#   PM2.5 12-35:  auto (let the purifier decide)
+#   PM2.5 < 12:   silent (minimum noise)
+# After vacuum: boost for 30 minutes
+# Night (22:00-07:00): silent mode regardless of PM2.5 unless > 50
+###############################################################################
+- alias: "Xiaomi Purifier 3H Control"
+  id: climatiq_purifier_3h
+  description: >-
+    PM2.5-reactive fan speed control for Xiaomi Air Purifier 3H.
+    Boosts after vacuum, quiets at night, auto-adjusts to PM2.5 level.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.living_room_pm25
+      above: 35
+      id: "pm25_high"
+    - trigger: numeric_state
+      entity_id: sensor.living_room_pm25
+      below: 12
+      id: "pm25_low"
+    - trigger: state
+      entity_id: vacuum.xiaomi_x20_plus
+      to: "returning"
+      id: "vacuum_done"
+    - trigger: time
+      at: "22:00:00"
+      id: "night_mode"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+  action:
+    - choose:
+        # PM2.5 critical: max speed
+        - conditions:
+            - condition: trigger
+              id: "pm25_high"
+          sequence:
+            - service: fan.turn_on
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: 100
+        # Vacuum done: boost for 30 minutes
+        - conditions:
+            - condition: trigger
+              id: "vacuum_done"
+          sequence:
+            - service: fan.turn_on
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: 100
+            - delay:
+                minutes: 30
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: >-
+                  {% set pm25 = states('sensor.living_room_pm25') | int(10) %}
+                  {% if pm25 > 35 %}100
+                  {% elif pm25 > 12 %}50
+                  {% else %}25{% endif %}
+        # Night mode: silent unless PM2.5 critical
+        - conditions:
+            - condition: trigger
+              id: "night_mode"
+          sequence:
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: >-
+                  {% set pm25 = states('sensor.living_room_pm25') | int(10) %}
+                  {{ 100 if pm25 > 50 else 16 }}
+        # PM2.5 low: silent
+        - conditions:
+            - condition: trigger
+              id: "pm25_low"
+          sequence:
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: 16
+      # Default: auto mode
+      default:
+        - service: fan.turn_on
+          target:
+            entity_id: fan.xiaomi_air_purifier_3h
+        - service: fan.set_percentage
+          target:
+            entity_id: fan.xiaomi_air_purifier_3h
+          data:
+            percentage: 50
+
+###############################################################################
+# VACUUM IAQ COORDINATION
+# Daily cleaning at optimal time (10:00 default, configurable).
+# Extra cleaning when PM2.5 baseline is rising (dust accumulation).
+# Boosts purifier 20 min after vacuum finishes.
+# Never runs at night (23:00-06:00).
+###############################################################################
+- alias: "Vacuum IAQ Coordination"
+  id: climatiq_vacuum_iaq
+  description: >-
+    Schedules vacuum cleaning at optimal times, coordinates with air
+    purifier for post-clean PM2.5 boost. Avoids nighttime operation.
+  trigger:
+    - trigger: time
+      at: "10:00:00"
+      id: "daily_clean"
+    - trigger: state
+      entity_id: vacuum.xiaomi_x20_plus
+      from: "cleaning"
+      to: "returning"
+      id: "vacuum_finished"
+      for:
+        minutes: 20
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+    - condition: time
+      after: "06:00:00"
+      before: "23:00:00"
+  action:
+    - choose:
+        # Daily cleaning schedule
+        - conditions:
+            - condition: trigger
+              id: "daily_clean"
+          sequence:
+            - service: vacuum.start
+              target:
+                entity_id: vacuum.xiaomi_x20_plus
+        # Post-vacuum purifier boost
+        - conditions:
+            - condition: trigger
+              id: "vacuum_finished"
+          sequence:
+            - service: fan.turn_on
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: 100
+            - delay:
+                minutes: 20
+            - service: fan.set_percentage
+              target:
+                entity_id: fan.xiaomi_air_purifier_3h
+              data:
+                percentage: 50
+
+###############################################################################
+# FRESH AIR OPPORTUNITY NOTIFICATION
+# Notifies when natural ventilation would be beneficial.
+# Only sends once per state change (open_windows).
+###############################################################################
+- alias: "Fresh Air Opportunity Notification"
+  id: climatiq_fresh_air_notify
+  description: >-
+    Sends notification when outdoor conditions are good for natural
+    ventilation. Encourages energy-free cooling/airing.
+  trigger:
+    - trigger: state
+      entity_id: sensor.ventilation_advice
+      to: "open_windows"
+  action:
+    - service: notify.notify
+      data:
+        title: "Fresh Air Available"
+        message: >-
+          Outdoor conditions are favorable for natural ventilation.
+          AQI: {{ states('sensor.waqi') }},
+          Outdoor: {{ states('sensor.open_meteo_temperature') }}°C,
+          Humidity: {{ states('sensor.open_meteo_humidity') }}%.
+          Consider opening windows for free cooling.
+
+###############################################################################
+# AQI WARNING NOTIFICATION
+# Triggers when outdoor AQI exceeds 100 (unhealthy for sensitive groups).
+###############################################################################
+- alias: "AQI Warning Notification"
+  id: climatiq_aqi_warning
+  description: >-
+    Sends warning notification when outdoor air quality becomes unhealthy.
+    Triggers at AQI > 100.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.waqi
+      above: 100
+  action:
+    - service: notify.notify
+      data:
+        title: "Air Quality Warning"
+        message: >-
+          Outdoor AQI is {{ states('sensor.waqi') }} (Unhealthy for
+          Sensitive Groups). Keep windows closed. Air purifiers activated.
+          Action level: {{ states('sensor.air_quality_action') }}.
+
+###############################################################################
+# CO2 WARNING NOTIFICATION
+# Triggers when indoor CO2 exceeds 1000 ppm (poor ventilation).
+# ASHRAE 62.1 recommends < 1000 ppm for acceptable indoor air quality.
+###############################################################################
+- alias: "CO2 Warning Notification"
+  id: climatiq_co2_warning
+  description: >-
+    Sends warning when indoor CO2 exceeds 1000 ppm indicating poor
+    ventilation. Suggests opening windows if outdoor AQI permits.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.living_room_co2
+      above: 1000
+  action:
+    - service: notify.notify
+      data:
+        title: "High CO2 Level"
+        message: >-
+          Living room CO2 is {{ states('sensor.living_room_co2') }} ppm.
+          Threshold: 1000 ppm. Consider ventilating.
+          {% if states('sensor.ventilation_advice') == 'open_windows' %}
+          Outdoor conditions allow window ventilation now.
+          {% else %}
+          Outdoor air quality is poor - use AC ventilation mode.
+          {% endif %}
+
+###############################################################################
+# HCHO (FORMALDEHYDE) WARNING NOTIFICATION
+# Triggers when formaldehyde exceeds 0.08 mg/m3 (WHO guideline).
+# Common in new furniture, flooring, paint off-gassing.
+###############################################################################
+- alias: "HCHO Warning Notification"
+  id: climatiq_hcho_warning
+  description: >-
+    Sends warning when formaldehyde (HCHO) exceeds WHO guideline of
+    0.08 mg/m3. Indicates potential off-gassing from furniture/materials.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.living_room_hcho
+      above: 0.08
+  action:
+    - service: notify.notify
+      data:
+        title: "Formaldehyde Warning"
+        message: >-
+          HCHO level is {{ states('sensor.living_room_hcho') }} mg/m3.
+          WHO guideline: 0.08 mg/m3. Increase ventilation immediately.
+          Possible sources: new furniture, flooring, paint.
+
+###############################################################################
+# HUMIDIFIER EMPTY NOTIFICATION
+# Notifies when Smartmi humidifier water tank is empty.
+# The Smartmi reports water level status via Miio integration.
+###############################################################################
+- alias: "Humidifier Empty Notification"
+  id: climatiq_humidifier_empty
+  description: >-
+    Sends notification when Smartmi humidifier water tank needs refilling.
+  trigger:
+    - trigger: state
+      entity_id: humidifier.smartmi_evaporative_humidifier_2
+      attribute: water_level
+      to: "empty"
+  action:
+    - service: notify.notify
+      data:
+        title: "Humidifier Needs Water"
+        message: >-
+          The Smartmi humidifier water tank is empty.
+          Please refill to maintain target humidity of
+          {{ states('sensor.target_humidity') }}%.
+
+###############################################################################
+# FILTER REPLACEMENT REMINDER
+# Notifies when air purifier filter life drops below 10%.
+# Based on Xiaomi Purifier 3H filter_life_percent attribute.
+###############################################################################
+- alias: "Filter Replacement Reminder"
+  id: climatiq_filter_replacement
+  description: >-
+    Sends reminder when air purifier filter life drops below 10%.
+    Xiaomi Purifier 3H reports filter_life_percent attribute.
+  trigger:
+    - trigger: numeric_state
+      entity_id: sensor.xiaomi_air_purifier_3h_filter_life
+      below: 10
+  action:
+    - service: notify.notify
+      data:
+        title: "Filter Replacement Needed"
+        message: >-
+          Xiaomi Air Purifier 3H filter life is at
+          {{ states('sensor.xiaomi_air_purifier_3h_filter_life') }}%.
+          Order replacement filter soon to maintain air quality.
+
+###############################################################################
+# PRE-COOL SUN-FACING ROOMS
+# Proactively lowers target temperature by 1-2 C in rooms with high
+# solar load before they overheat. Runs 30 minutes ahead of peak solar.
+# The master controller handles the actual AC adjustment; this automation
+# provides an early signal by adjusting the target earlier in the cycle.
+###############################################################################
+- alias: "Pre-Cool Sun-Facing Rooms"
+  id: climatiq_precool_solar
+  description: >-
+    Detects rooms with high solar load and proactively lowers AC targets.
+    Runs when sun exposure intensity rises to high, 30 min before peak
+    heat gain. Reduces target by 1-2 C to prevent thermal overshoot.
+  trigger:
+    - trigger: state
+      entity_id: sensor.sun_exposure_intensity
+      to: "high"
+  condition:
+    - condition: state
+      entity_id: input_boolean.vacation_mode
+      state: "off"
+    - condition: template
+      value_template: >-
+        {{ states('sensor.current_season') in ['summer', 'spring', 'autumn'] }}
+  action:
+    # Find rooms with high solar load and pre-cool them
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room1_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.living_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: "cool"
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room2_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.children_room_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: "cool"
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room3_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.room3_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: "cool"
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: sensor.room4_solar_load
+              state: "high"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.room4_ac
+              data:
+                temperature: >-
+                  {{ (states('sensor.target_temperature') | float(24) - 1) | round(1) }}
+                hvac_mode: "cool"

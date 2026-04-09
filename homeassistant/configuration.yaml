@@ -1,0 +1,222 @@
+###############################################################################
+# ClimatIQ - Home Assistant Configuration
+# ASHRAE 55-based intelligent climate control for a 4-room apartment
+# Location: Skopje, Macedonia (continental climate)
+#
+# Entity naming convention:
+#   climate.{room}_ac              - Vivax AC units (via SLWF-01pro/ESPHome)
+#   fan.xiaomi_air_purifier_3h     - Xiaomi Purifier 3H (Miio)
+#   humidifier.smartmi_*           - Smartmi Humidifier 2 (Miio)
+#   vacuum.xiaomi_x20_plus         - Xiaomi X20+ Vacuum (Miot Auto)
+#   switch.shelly_*                - Shelly plugs (auto-discovery)
+#   sensor.*                       - Various sensors (BLE, Miio, integrations)
+###############################################################################
+
+##############################################################################
+# CORE - Default Home Assistant integrations
+# https://www.home-assistant.io/integrations/default_config/
+# Includes: automation, cloud, config, energy, history, logbook,
+#           media_source, mobile_app, my, script, ssdp, tag, tts,
+#           websocket_api, zeroconf
+##############################################################################
+default_config:
+
+##############################################################################
+# HTTP SERVER
+##############################################################################
+http:
+  server_port: 8123
+  # ip_ban_enabled: true
+  # login_attempts_threshold: 5
+
+##############################################################################
+# FRONTEND
+# Custom themes and resource loading
+##############################################################################
+frontend:
+  themes: !include_dir_merge_named themes/
+  # extra_module_url:
+  #   - /hacsfiles/lovelace-card-mod/card-mod.js
+
+##############################################################################
+# RECORDER - Database retention
+# Keep 5 days of history (sufficient for dashboard trends + low storage)
+##############################################################################
+recorder:
+  purge_keep_days: 5
+  # Exclude high-frequency entities to reduce DB size
+  exclude:
+    domains:
+      - updater
+      - zone
+    entity_globs:
+      - sensor.sun_*
+    entities:
+      - sun.sun
+      - sensor.time
+      - sensor.date
+
+##############################################################################
+# LOGGER
+# Default info level; set specific integrations to debug during setup
+##############################################################################
+logger:
+  default: info
+  logs:
+    custom_components.xiaomi_miot_raw: warn
+    homeassistant.components.esphome: info
+    homeassistant.components.xiaomi_miio: info
+    homeassistant.components.bluetooth: info
+
+##############################################################################
+# TEMPLATES - Template sensors for climate intelligence
+# Computed from raw sensor data: seasons, targets, advice, solar loads
+##############################################################################
+template: !include templates.yaml
+
+##############################################################################
+# AUTOMATIONS - All climate and device automations
+##############################################################################
+automation: !include automations.yaml
+
+##############################################################################
+# INPUT HELPERS - User-configurable parameters
+##############################################################################
+input_number: !include inputs.yaml
+# input_boolean and input_select defined inline below (small lists)
+
+input_boolean:
+  vacation_mode:
+    name: "Vacation Mode"
+    icon: mdi:palm-tree
+    initial: false
+  guest_mode:
+    name: "Guest Mode"
+    icon: mdi:account-group
+    initial: false
+
+input_select:
+  climate_mode:
+    name: "Climate Mode Override"
+    options:
+      - "auto"
+      - "comfort"
+      - "eco"
+      - "away"
+      - "sleep"
+    icon: mdi:tune-vertical
+
+##############################################################################
+# INTEGRATIONS - Device and service configurations
+##############################################################################
+
+# --- ESPHome (SLWF-01pro smart IR controllers for Vivax AC units) ----------
+# Each SLWF-01pro runs ESPHome firmware exposing a climate entity.
+# Devices are auto-discovered on the local network after initial flash.
+# Configure each device in ESPHome dashboard first, then add here.
+esphome:
+  # entries auto-created when you adopt devices from the ESPHome sidebar
+
+# --- Xiaomi Miio (Air Purifier 3H + Smartmi Humidifier 2) -----------------
+# Requires device tokens extracted via miio-extract-tokens or the Xiaomi
+# cloud method. See integrations/xiaomi-miio.md for token extraction.
+#
+# After obtaining tokens, configure via UI: Settings > Devices & Services >
+# Add Integration > Xiaomi Miio. Or define manually below:
+#
+# fan:
+#   - platform: xiaomi_miio
+#     host: 192.168.1.XX
+#     token: !secret purifier_3h_token
+#     name: "Xiaomi Air Purifier 3H"
+#
+# humidifier:
+#   - platform: xiaomi_miio
+#     host: 192.168.1.XX
+#     token: !secret smartmi_humidifier_token
+#     name: "Smartmi Evaporative Humidifier 2"
+
+# --- Xiaomi Miot Auto (X20+ Vacuum Robot) ---------------------------------
+# HACS integration: https://github.com/al-one/hass-xiaomi-miot
+# Add via UI: Settings > Devices & Services > Xiaomi Miot Auto
+# Uses Xiaomi account login (no manual token needed for cloud devices)
+#
+# vacuum:
+#   - platform: xiaomi_miot
+#     host: 192.168.1.XX
+#     token: !secret x20_vacuum_token
+
+# --- Xiaomi BLE (Room sensors) ---------------------------------------------
+# BLE sensors for temperature/humidity in children's room.
+# Requires encryption key from Xiaomi cloud or device extraction.
+# See integrations/xiaomi-ble.md for key extraction procedure.
+#
+# bluetooth:
+#   # Enable BLE scanner (auto-enabled in default_config)
+
+# --- Shelly (Smart plugs for Blueair 411 + S8 charger) ---------------------
+# Shelly devices auto-discover via mDNS/CoIoT on the local network.
+# Add integration via UI: Settings > Devices > Add > Shelly
+#
+# shelly:  # auto-configured via discovery
+
+# --- Open-Meteo (Outdoor weather, no API key) ------------------------------
+# Provides: temperature, humidity, dew point, cloud cover, wind, etc.
+# Add via UI: Settings > Devices > Add > Open-Meteo
+# Location: Skopje, Macedonia (auto-detected from HA config)
+#
+# No manual config needed - configured through UI with:
+#   Latitude: 41.9973
+#   Longitude: 21.4280
+
+# --- WAQI / World Air Quality Index (Outdoor AQI) -------------------------
+# Free token from https://aqicn.org/data-platform/token/
+# Station: "Skopje - Centar" or nearest available
+# Add via UI: Settings > Devices > Add > World Air Quality Index (WAQI)
+#
+# sensor:
+#   - platform: waqi
+#     token: !secret waqi_token
+#     station: skopje
+
+# --- Sun (built-in, provides azimuth + elevation) --------------------------
+# Already included in default_config. Provides sun.sun entity with
+# attributes: azimuth, elevation, next_rising, next_setting, etc.
+#
+# sun:
+
+# --- XiaoMei WP6003 Air Quality (BLE air quality box) ---------------------
+# Connected via ESP32 BLE client (see integrations/smarthome-wp6003.md).
+# Exposes CO2, TVOC, HCHO sensors through ESPHome custom component.
+# The ESP32 bridges BLE data to HA via ESPHome native API.
+#
+# Configured as an ESPHome device running custom BLE client code.
+
+##############################################################################
+# SECRETS - Reference secrets for sensitive tokens
+# Actual values go in secrets.yaml (gitignored)
+##############################################################################
+# secrets.yaml should contain:
+#   purifier_3h_token: <32-char-hex-token>
+#   smartmi_humidifier_token: <32-char-hex-token>
+#   x20_vacuum_token: <32-char-hex-token>
+#   xiaomi_ble_key: <16-byte-hex>
+#   waqi_token: <waqi-api-token>
+#   shelly_auth_user: <username>
+#   shelly_auth_password: <password>
+
+##############################################################################
+# SCRIPTS (reserved for future automation helpers)
+##############################################################################
+# script: !include scripts.yaml
+
+##############################################################################
+# DASHBOARDS (reserved for custom Lovelace views)
+##############################################################################
+# lovelace:
+#   mode: yaml
+#   dashboards:
+#     climatiq:
+#       mode: yaml
+#       title: ClimatIQ
+#       filename: dashboards/climatiq.yaml

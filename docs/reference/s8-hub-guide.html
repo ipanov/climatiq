@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy S8 → Home Assistant Hub</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+        .placeholder-notice { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .placeholder-notice h2 { margin-top: 0; color: #856404; }
+        .toc { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .toc ul { padding-left: 20px; }
+        .toc li { margin: 4px 0; color: #495057; }
+        code { background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Galaxy S8 → Home Assistant Hub</h1>
+
+    <div class="placeholder-notice">
+        <h2>Reference Document Placeholder</h2>
+        <p>
+            This file is a placeholder for the full "Galaxy S8 as Home Assistant Hub"
+            reference document generated during the ClimatIQ planning session. The
+            complete HTML document was produced as part of an AI conversation and
+            contains the detailed S8 setup guide.
+        </p>
+        <p>
+            <strong>Note:</strong> A detailed Markdown version of this guide is available
+            at <code>hardware/s8-setup-guide.md</code> in the same repository, which was
+            extracted from this reference document.
+        </p>
+        <p>
+            <strong>To regenerate:</strong> Re-run the planning conversation with the
+            ClimatIQ AI assistant, requesting the "S8 Hub Setup" document.
+        </p>
+    </div>
+
+    <h2>Full Document Contents</h2>
+
+    <div class="toc">
+        <p><strong>Table of Contents (as produced in the full document):</strong></p>
+        <ul>
+            <li>Samsung Galaxy S8 Specifications
+                <ul>
+                    <li>Exynos 8895 / Snapdragon 835, 4 GB RAM, 64 GB storage</li>
+                    <li>Bluetooth 5.0 (BLE support)</li>
+                    <li>WiFi 802.11 a/b/g/n/ac (2.4 + 5 GHz)</li>
+                    <li>3000 mAh battery (likely degraded — battery cycling essential)</li>
+                    <li>USB-C with OTG support</li>
+                </ul>
+            </li>
+            <li>Installation Method: Termux + Udocker
+                <ul>
+                    <li>Why not HA OS: requires Linux kernel features not available on Android</li>
+                    <li>Why not Docker: requires root, not available on stock Android</li>
+                    <li>Why Udocker: user-space container runtime, no root, works on Termux</li>
+                    <li>Limitations: no add-ons, no supervised mode, manual container management</li>
+                </ul>
+            </li>
+            <li>Step-by-Step Setup
+                <ul>
+                    <li>Factory reset → F-Droid → Termux → udocker → HA container</li>
+                    <li>Android settings for reliability (battery, wake lock, WiFi)</li>
+                    <li>Data persistence and backup strategy</li>
+                </ul>
+            </li>
+            <li>Critical Android Settings
+                <ul>
+                    <li>Battery optimization: unrestricted for Termux</li>
+                    <li>Wake lock: prevent CPU sleep</li>
+                    <li>WiFi: always on during sleep</li>
+                    <li>Do Not Disturb: S8 is a headless server</li>
+                    <li>Samsung-specific: disable "Put unused apps to sleep"</li>
+                </ul>
+            </li>
+            <li>BLE Proxy Options
+                <ul>
+                    <li>S8 native Bluetooth + HA integration (preferred)</li>
+                    <li>ESPHome BLE Proxy on ESP32 (fallback)</li>
+                    <li>Android BLE Proxy app (alternative)</li>
+                    <li>XiaoMei vacuum communication specifics</li>
+                </ul>
+            </li>
+            <li>Vivax AC Setup Without ESPHome Dashboard
+                <ul>
+                    <li>SLWF-01pro module installation</li>
+                    <li>Manual ESPHome configuration (YAML)</li>
+                    <li>OTA update procedure</li>
+                    <li>HA climate entity configuration</li>
+                </ul>
+            </li>
+            <li>Device Integration Setup
+                <ul>
+                    <li>XiaoMei vacuum via BLE (miio/miio2 integration)</li>
+                    <li>Blueair 411 via Shelly Plug S (on/off + power monitoring)</li>
+                    <li>Shelly Plug S native integration</li>
+                    <li>Temperature/humidity sensors (Zigbee or WiFi)</li>
+                </ul>
+            </li>
+            <li>Workarounds for Missing Features
+                <ul>
+                    <li>No add-ons: run services manually in Termux or separate containers</li>
+                    <li>No Supervisor: manual backup via tar, manual updates via udocker pull</li>
+                    <li>No HACS: install via manual git clone into custom_components/</li>
+                    <li>Limited Bluetooth: BLE proxy workaround for out-of-range devices</li>
+                </ul>
+            </li>
+            <li>Updated Budget
+                <ul>
+                    <li>S8: $0 (already owned)</li>
+                    <li>SLWF-01pro x4: $40-48</li>
+                    <li>Shelly Plug S x2: ~$30</li>
+                    <li>ESP32 (conditional): $0-5</li>
+                    <li>Total: $70-83</li>
+                </ul>
+            </li>
+            <li>Action Plan
+                <ul>
+                    <li>Phase 1: S8 setup + HA core (Day 0-1)</li>
+                    <li>Phase 2: Shelly plugs + battery cycling (Day 5-10)</li>
+                    <li>Phase 3: AC modules arrive + integrate (Day 15-30)</li>
+                    <li>Phase 4: Climate engine automations (Day 31+)</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

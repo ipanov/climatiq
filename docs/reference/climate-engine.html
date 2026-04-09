@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Intelligence Engine</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+        .placeholder-notice { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .placeholder-notice h2 { margin-top: 0; color: #856404; }
+        .toc { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .toc ul { padding-left: 20px; }
+        .toc li { margin: 4px 0; color: #495057; }
+        code { background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Climate Intelligence Engine</h1>
+
+    <div class="placeholder-notice">
+        <h2>Reference Document Placeholder</h2>
+        <p>
+            This file is a placeholder for the full "Climate Intelligence Engine"
+            reference document generated during the ClimatIQ planning session. The
+            complete HTML document was produced as part of an AI conversation and
+            contains the technical implementation details for the HA climate engine.
+        </p>
+        <p>
+            <strong>To regenerate:</strong> Re-run the planning conversation with the
+            ClimatIQ AI assistant, requesting the "Climate Intelligence Engine" document.
+        </p>
+    </div>
+
+    <h2>Full Document Contents</h2>
+
+    <div class="toc">
+        <p><strong>Table of Contents (as produced in the full document):</strong></p>
+        <ul>
+            <li>External Data Sources
+                <ul>
+                    <li>Open-Meteo API — free weather forecast, no API key required</li>
+                    <li>WAQI (World Air Quality Index) — real-time AQI data for Skopje</li>
+                    <li>OpenWeatherMap — backup weather source, 5-day forecast</li>
+                    <li>Integration endpoints, update intervals, API limits</li>
+                </ul>
+            </li>
+            <li>Data Architecture Diagram
+                <ul>
+                    <li>Sensors → HA → Template Sensors → Automations → Actuators</li>
+                    <li>External API data flow into HA sensor entities</li>
+                    <li>Room-level sensor aggregation and state management</li>
+                </ul>
+            </li>
+            <li>Template Sensors (YAML)
+                <ul>
+                    <li>Thermal comfort sensor (PMV approximation)</li>
+                    <li>Dew point calculator</li>
+                    <li>AQI aggregator (indoor + outdoor combined)</li>
+                    <li>Solar heat gain estimator per room orientation</li>
+                    <li>Room occupancy state machine</li>
+                    <li>Season detection (heating vs cooling mode)</li>
+                </ul>
+            </li>
+            <li>Room Orientation Configuration
+                <ul>
+                    <li>Per-room compass direction for solar gain calculations</li>
+                    <li>Window area and SHGC values</li>
+                    <li>Thermal mass estimates</li>
+                </ul>
+            </li>
+            <li>Master Automation (YAML)
+                <ul>
+                    <li>Climate control master loop (runs every 5 minutes)</li>
+                    <li>Ventilation decision engine</li>
+                    <li>AQI-responsive air purifier control</li>
+                    <li>Humidity management (humidifier winter / dehumidifier summer)</li>
+                    <li>Pre-conditioning based on weather forecast</li>
+                </ul>
+            </li>
+            <li>Decision Matrix
+                <ul>
+                    <li>Temperature vs humidity vs AQI combined decision table</li>
+                    <li>Action priority: health (AQI) > comfort (temp/RH) > energy (cost)</li>
+                    <li>Conflict resolution: e.g. hot + bad AQI = AC recirculate, don't open windows</li>
+                </ul>
+            </li>
+            <li>Smart Notifications
+                <ul>
+                    <li>Telegram bot integration for alerts</li>
+                    <li>Notification priority levels: info, warning, action required</li>
+                    <li>Context-aware messages: "Open windows — outdoor AQI is 25, indoor is 80"</li>
+                </ul>
+            </li>
+            <li>Future Upgrades
+                <ul>
+                    <li>CO2 sensor integration (NDIR sensor recommended)</li>
+                    <li>Room-specific temperature sensors (Bluetooth LE)</li>
+                    <li>Energy monitoring per circuit (CT clamp on breaker panel)</li>
+                    <li>Machine learning for occupancy prediction</li>
+                    <li>Raspberry Pi migration path from S8</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

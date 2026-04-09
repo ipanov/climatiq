@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Basis — Climate Intelligence Engine</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+        .placeholder-notice { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .placeholder-notice h2 { margin-top: 0; color: #856404; }
+        .toc { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .toc ul { padding-left: 20px; }
+        .toc li { margin: 4px 0; color: #495057; }
+        code { background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Scientific Basis — Climate Intelligence Engine</h1>
+
+    <div class="placeholder-notice">
+        <h2>Reference Document Placeholder</h2>
+        <p>
+            This file is a placeholder for the full "Scientific Basis" reference
+            document generated during the ClimatIQ planning session. The complete HTML
+            document was produced as part of an AI conversation and contains the
+            scientific foundation for all climate control automations.
+        </p>
+        <p>
+            <strong>To regenerate:</strong> Re-run the planning conversation with the
+            ClimatIQ AI assistant, requesting the "Scientific Foundation" document.
+        </p>
+    </div>
+
+    <h2>Full Document Contents</h2>
+
+    <div class="toc">
+        <p><strong>Table of Contents (as produced in the full document):</strong></p>
+        <ul>
+            <li>Fanger PMV/PPD Model
+                <ul>
+                    <li>6 input variables: air temperature, mean radiant temperature, air velocity, humidity, clothing insulation, metabolic rate</li>
+                    <li>PMV scale: -3 (cold) to +3 (hot), target range -0.5 to +0.5</li>
+                    <li>PPD (Predicted Percentage of Dissatisfied): derived from PMV</li>
+                    <li>ASHRAE Standard 55 compliance targets</li>
+                </ul>
+            </li>
+            <li>Humidity Science
+                <ul>
+                    <li>Psychrometric boundaries: dew point, relative humidity, absolute humidity</li>
+                    <li>Winter paradox: heating reduces RH, risk of static + dry skin + respiratory issues</li>
+                    <li>Summer challenge: high outdoor humidity, mold risk above 60% RH</li>
+                    <li>Optimal range: 30-50% RH (winter), 40-60% RH (summer)</li>
+                </ul>
+            </li>
+            <li>Air Quality Index (AQI) Framework
+                <ul>
+                    <li>EPA AQI scale: 0-500 with color-coded bands</li>
+                    <li>PM2.5 breakpoints and health impact levels</li>
+                    <li>PM10 breakpoints</li>
+                    <li>CO2 thresholds: 400 ppm (outdoor baseline), 1000 ppm (ventilation needed), 2000+ ppm (health risk)</li>
+                    <li>VOC limits and TVOC scale</li>
+                </ul>
+            </li>
+            <li>Solar Heat Gain Calculations
+                <ul>
+                    <li>Solar irradiance by orientation and time of day</li>
+                    <li>Window U-values and SHGC (Solar Heat Gain Coefficient)</li>
+                    <li>Room orientation-specific heat load estimates</li>
+                    <li>Feedforward control: pre-cool before solar peak</li>
+                </ul>
+            </li>
+            <li>Control Laws
+                <ul>
+                    <li>Deadband control: +/- 0.5C around setpoint to prevent compressor cycling</li>
+                    <li>Scheduling: occupied vs unoccupied vs sleep setpoints</li>
+                    <li>Feedforward: weather forecast adjusts setpoints proactively</li>
+                    <li>Multi-objective: comfort vs energy vs air quality tradeoffs</li>
+                </ul>
+            </li>
+            <li>Ventilation Decision Tree
+                <ul>
+                    <li>Open windows: when outdoor AQI good AND temperature favorable</li>
+                    <li>Run purifier: when outdoor AQI poor OR indoor pollutants detected</li>
+                    <li>Run AC fan mode: when humidity control needed without cooling</li>
+                </ul>
+            </li>
+            <li>Honest Limitations
+                <ul>
+                    <li>No CO2 sensor (estimates from occupancy + time)</li>
+                    <li>No dedicated outdoor weather station (uses API data)</li>
+                    <li>Single temperature sensor per room (assumes uniform distribution)</li>
+                    <li>PMV approximation (not full Fanger calculation)</li>
+                </ul>
+            </li>
+            <li>Scientific References
+                <ul>
+                    <li>ASHRAE Standard 55-2020 (Thermal Environmental Conditions)</li>
+                    <li>ISO 7730:2005 (Ergonomics of the thermal environment)</li>
+                    <li>EPA AQI Technical Assistance Document</li>
+                    <li>WHO Air Quality Guidelines (2021 update)</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>
